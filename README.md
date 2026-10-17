@@ -90,15 +90,27 @@ guessing what you meant:
 angsh: assignment 'FOO=bar' needs POSIX mode (try `set FOO bar` or `posix on`)
 ```
 
-## 🔨 Build
+## 📦 Install
+
+**Prebuilt binary** — Linux x86_64, fully static (no runtime dependencies):
 
 ```sh
-cmake -B build && cmake --build build
-./build/angsh
-sudo cmake --install build   # /usr/local/bin + themes
+curl -LO https://github.com/0x251C08/ang.sh/releases/download/v0.1.0/angsh-v0.1.0-x86_64-linux
+curl -LO https://github.com/0x251C08/ang.sh/releases/download/v0.1.0/angsh-v0.1.0-x86_64-linux.sha256
+sha256sum -c angsh-v0.1.0-x86_64-linux.sha256
+chmod +x angsh-v0.1.0-x86_64-linux
+sudo mv angsh-v0.1.0-x86_64-linux /usr/local/bin/angsh
 ```
 
-Requirements: a C++17 compiler, CMake 3.16+, POSIX (Linux/macOS).
+**From source** — any POSIX system with a C++17 compiler and CMake 3.16+:
+
+```sh
+cmake -B build && cmake --build build   # optimized (Release) by default
+./build/angsh
+sudo cmake --install build              # /usr/local/bin + themes
+```
+
+Use `-DCMAKE_BUILD_TYPE=Debug` for a debug build.
 **Zero libraries** — stdlib and POSIX only, by design.
 
 ## 🚀 Usage
