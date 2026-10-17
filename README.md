@@ -109,11 +109,11 @@ curl -fsSL https://raw.githubusercontent.com/0x251C08/ang.sh/main/install.sh | s
 **Manual download** — Linux x86_64, fully static (no runtime dependencies):
 
 ```sh
-curl -LO https://github.com/0x251C08/ang.sh/releases/download/v0.1.0/angsh-v0.1.0-x86_64-linux
-curl -LO https://github.com/0x251C08/ang.sh/releases/download/v0.1.0/angsh-v0.1.0-x86_64-linux.sha256
-sha256sum -c angsh-v0.1.0-x86_64-linux.sha256
-chmod +x angsh-v0.1.0-x86_64-linux
-sudo mv angsh-v0.1.0-x86_64-linux /usr/local/bin/angsh
+curl -LO https://github.com/0x251C08/ang.sh/releases/download/v0.1.1/angsh-v0.1.1-x86_64-linux
+curl -LO https://github.com/0x251C08/ang.sh/releases/download/v0.1.1/angsh-v0.1.1-x86_64-linux.sha256
+sha256sum -c angsh-v0.1.1-x86_64-linux.sha256
+chmod +x angsh-v0.1.1-x86_64-linux
+sudo mv angsh-v0.1.1-x86_64-linux /usr/local/bin/angsh
 ```
 
 **From source** — any POSIX system with a C++17 compiler and CMake 3.16+:
