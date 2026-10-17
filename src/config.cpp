@@ -7,6 +7,7 @@
 #include "prompt.h"
 #include "util.h"
 #include <algorithm>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <vector>

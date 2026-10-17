@@ -2,6 +2,7 @@
 #include "highlight.h"
 #include "lexer.h"
 #include "util.h"
+#include <cstdlib>
 #include <unistd.h>
 
 namespace ang {

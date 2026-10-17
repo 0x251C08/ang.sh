@@ -1,4 +1,5 @@
 // main.cpp — angsh entry point: CLI flags, script mode, and the REPL.
+#include <unistd.h>
 #include <filesystem>
 #include <iostream>
 #include <signal.h>

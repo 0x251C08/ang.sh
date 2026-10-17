@@ -2,6 +2,7 @@
 #include "prompt.h"
 #include "builtins.h"
 #include "util.h"
+#include <cstdlib>
 #include <ctime>
 #include <fstream>
 #include <iostream>

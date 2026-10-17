@@ -5,6 +5,7 @@
 #include "util.h"
 #include <algorithm>
 #include <cstdio>
+#include <cstdlib>
 #include <dirent.h>
 #include <fstream>
 #include <iostream>

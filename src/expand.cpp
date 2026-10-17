@@ -2,6 +2,7 @@
 #include "expand.h"
 #include "util.h"
 #include <cctype>
+#include <cstdlib>
 #include <glob.h>
 #include <unistd.h>
 
