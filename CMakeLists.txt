@@ -35,3 +35,10 @@ target_include_directories(angsh PRIVATE src)
 install(TARGETS angsh DESTINATION bin)
 install(DIRECTORY examples/ DESTINATION share/doc/angsh/examples)
 install(DIRECTORY themes/ DESTINATION share/angsh/themes)
+
+# --version output: default to the project version, overridable for releases
+# (e.g. `cmake -B build -DANG_VERSION=0.2.0` from a tag).
+if(NOT DEFINED ANG_VERSION)
+    set(ANG_VERSION ${PROJECT_VERSION})
+endif()
+target_compile_definitions(angsh PRIVATE ANG_VERSION="${ANG_VERSION}")

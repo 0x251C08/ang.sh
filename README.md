@@ -1,6 +1,7 @@
 # ang.sh — angsh
 
 <p align="center">
+  <a href="https://github.com/0x251C08/ang.sh/actions/workflows/ci.yml"><img src="https://github.com/0x251C08/ang.sh/actions/workflows/ci.yml/badge.svg" alt="ci"></a>
   <img src="https://img.shields.io/badge/version-0.1.0-blueviolet?style=flat-square" alt="version">
   <img src="https://img.shields.io/badge/language-C%2B%2B17-00599C?style=flat-square" alt="C++17">
   <img src="https://img.shields.io/badge/dependencies-none-brightgreen?style=flat-square" alt="no deps">

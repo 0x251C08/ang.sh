@@ -60,11 +60,13 @@ command -v curl >/dev/null 2>&1 || die "curl is required"
 os=$(uname -s)
 arch=$(uname -m)
 case "$os" in
-    Linux) os_part=linux ;;
+    Linux)  os_part=linux ;;
+    Darwin) os_part=darwin ;;
     *) die "no prebuilt binary for $os yet — build from source: https://github.com/$REPO#-install" ;;
 esac
 case "$arch" in
     x86_64|amd64) arch_part=x86_64 ;;
+    aarch64|arm64) arch_part=$arch ;;  # keep native spelling: aarch64 (Linux) / arm64 (macOS)
     *) die "no prebuilt binary for $arch yet — build from source: https://github.com/$REPO#-install" ;;
 esac
 
