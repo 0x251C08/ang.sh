@@ -92,7 +92,20 @@ angsh: assignment 'FOO=bar' needs POSIX mode (try `set FOO bar` or `posix on`)
 
 ## 📦 Install
 
-**Prebuilt binary** — Linux x86_64, fully static (no runtime dependencies):
+**One-liner** — resolves the latest release, verifies the checksum, and installs
+the static binary (`/usr/local/bin` if writable, else `~/.local/bin`):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/0x251C08/ang.sh/main/install.sh | sh
+```
+
+Pin a version or pick a directory:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/0x251C08/ang.sh/main/install.sh | sh -s -- --version v0.1.0 --dir ~/bin
+```
+
+**Manual download** — Linux x86_64, fully static (no runtime dependencies):
 
 ```sh
 curl -LO https://github.com/0x251C08/ang.sh/releases/download/v0.1.0/angsh-v0.1.0-x86_64-linux
