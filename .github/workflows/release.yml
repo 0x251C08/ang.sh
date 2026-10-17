@@ -76,6 +76,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           tag="$TAG"
+          # First job to get here creates the release; the others may race
+          # and lose with HTTP 422 — that's fine, they just upload after.
           gh release view "$tag" >/dev/null 2>&1 \
-            || gh release create "$tag" --title "angsh $tag" --generate-notes
+            || gh release create "$tag" --title "angsh $tag" --generate-notes >/dev/null 2>&1 \
+            || true
           gh release upload "$tag" "angsh-${tag}-"* --clobber
