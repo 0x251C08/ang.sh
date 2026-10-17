@@ -2,7 +2,7 @@
 
 <p align="center">
   <a href="https://github.com/0x251C08/ang.sh/actions/workflows/ci.yml"><img src="https://github.com/0x251C08/ang.sh/actions/workflows/ci.yml/badge.svg" alt="ci"></a>
-  <img src="https://img.shields.io/badge/version-0.1.0-blueviolet?style=flat-square" alt="version">
+  <img src="https://img.shields.io/badge/version-0.1.1-blueviolet?style=flat-square" alt="version">
   <img src="https://img.shields.io/badge/language-C%2B%2B17-00599C?style=flat-square" alt="C++17">
   <img src="https://img.shields.io/badge/dependencies-none-brightgreen?style=flat-square" alt="no deps">
   <img src="https://img.shields.io/badge/license-MIT-yellow?style=flat-square" alt="MIT">
@@ -14,7 +14,7 @@
   / _` | '_ \ / _` / __| '_ \
  | (_| | | | | (_| \__ \ | | |
   \__,_|_| |_|\__, |___/_| |_|
-               |___/  v0.1.0
+               |___/  v0.1.1
 ```
 
 A small Unix shell in C++ that takes the best ideas from **bash**, **zsh**,
@@ -103,7 +103,7 @@ curl -fsSL https://raw.githubusercontent.com/0x251C08/ang.sh/main/install.sh | s
 Pin a version or pick a directory:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/0x251C08/ang.sh/main/install.sh | sh -s -- --version v0.1.0 --dir ~/bin
+curl -fsSL https://raw.githubusercontent.com/0x251C08/ang.sh/main/install.sh | sh -s -- --version v0.1.1 --dir ~/bin
 ```
 
 **Manual download** — Linux x86_64, fully static (no runtime dependencies):

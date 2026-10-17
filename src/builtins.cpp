@@ -13,7 +13,7 @@
 #include <limits.h>
 
 #ifndef ANG_VERSION
-#define ANG_VERSION "0.1.0"
+#define ANG_VERSION "0.1.1"
 #endif
 
 namespace ang {
