@@ -3,6 +3,12 @@ name: release
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to build and upload assets for (e.g. v0.1.0)"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -12,6 +18,9 @@ jobs:
     name: build (${{ matrix.target }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
+    # Tag pushes use the pushed tag; manual runs use the input.
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
     strategy:
       fail-fast: false
       matrix:
@@ -34,11 +43,14 @@ jobs:
             strip: ""
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Build the code as of the target tag, not the branch used to dispatch.
+          ref: ${{ inputs.tag || github.ref_name }}
 
       - name: Build
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release \
-            -DANG_VERSION="${GITHUB_REF_NAME#v}" \
+            -DANG_VERSION="${TAG#v}" \
             ${{ matrix.configure }}
           cmake --build build --parallel
 
@@ -49,7 +61,7 @@ jobs:
 
       - name: Package (binary + checksum)
         run: |
-          name="angsh-${GITHUB_REF_NAME}-${{ matrix.target }}"
+          name="angsh-${TAG}-${{ matrix.target }}"
           cp build/angsh "$name"
           if [ "${{ matrix.strip }}" = "true" ]; then strip "$name"; fi
           if command -v sha256sum >/dev/null 2>&1; then
@@ -63,7 +75,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag="${GITHUB_REF_NAME}"
+          tag="$TAG"
           gh release view "$tag" >/dev/null 2>&1 \
             || gh release create "$tag" --title "angsh $tag" --generate-notes
           gh release upload "$tag" "angsh-${tag}-"* --clobber
