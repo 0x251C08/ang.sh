@@ -9,7 +9,7 @@ license=('MIT')
 makedepends=('cmake')
 install="$pkgname.install"
 source=("$pkgname-$pkgver.tar.gz::https://github.com/0x251C08/ang.sh/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('fe5c5f889d3d25afd8837dfa80e3371db7a837864dd30110a205c05166d9e0ed')
+sha256sums=('776fe344b5e49717a2b2c25388b094805d3be214c58c884545521cc1a9c71708')
 
 build() {
   cd "ang.sh-$pkgver"
