@@ -1,6 +1,6 @@
 pkgbase = angsh
 	pkgdesc = Small shell blending bash, zsh, and fish, with Ang and POSIX syntax modes
-	pkgver = 0.1.1
+	pkgver = 0.1.2
 	pkgrel = 1
 	url = https://github.com/0x251C08/ang.sh
 	install = angsh.install
@@ -8,7 +8,7 @@ pkgbase = angsh
 	arch = aarch64
 	license = MIT
 	makedepends = cmake
-	source = angsh-0.1.1.tar.gz::https://github.com/0x251C08/ang.sh/archive/refs/tags/v0.1.1.tar.gz
-	sha256sums = 507abc8b9b022ce6e625709311f833e46074f6ce37022ac58f303a77eb4229ad
+	source = angsh-0.1.2.tar.gz::https://github.com/0x251C08/ang.sh/archive/refs/tags/v0.1.2.tar.gz
+	sha256sums = fe5c5f889d3d25afd8837dfa80e3371db7a837864dd30110a205c05166d9e0ed
 
 pkgname = angsh
