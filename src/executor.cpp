@@ -10,6 +10,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <cerrno>
+#include <array>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -51,23 +52,110 @@ std::string preprocess(const std::string& line, ShellState& st, bool* skip) {
         }
     }
 
-    // fish-style abbreviation: expand first word only
+    // fish-style abbreviation + bash-style alias: expand the first word of
+    // EVERY command — the line start and each command after ; | && || (the
+    // scan is quote-aware; redirect targets are not expanded). Alias chains
+    // expand up to 10 deep, like bash.
     {
-        auto w = split_words(s);
-        if (!w.empty()) {
-            auto it = st.abbrs.find(w[0]);
-            if (it != st.abbrs.end()) {
-                s = it->second + s.substr(w[0].size());
-                w = split_words(s);
+        std::string out;
+        bool at_cmd_start = true;    // start of a new command word zone
+        bool expect_target = false;  // last op was a redirection -> next word is a file
+        for (size_t i = 0; i < s.size();) {
+            char c = s[i];
+            if (c == '\\') {                                // escape pair: verbatim
+                out += c;
+                if (i + 1 < s.size()) out += s[i + 1];
+                i += 2;
+                continue;
             }
+            if (c == '#') {                                 // comment: keep as-is
+                out += s.substr(i);
+                break;
+            }
+            if (c == '\'') {                                // single-quoted: verbatim
+                size_t e = s.find('\'', i + 1);
+                e = (e == std::string::npos) ? s.size() : e + 1;
+                out += s.substr(i, e - i);
+                i = e;
+                continue;
+            }
+            if (c == '"') {                                 // double-quoted: honor \"
+                out += '"';
+                ++i;
+                while (i < s.size()) {
+                    if (s[i] == '\\' && i + 1 < s.size()) {
+                        out += s.substr(i, 2); i += 2; continue;
+                    }
+                    out += s[i];
+                    char q = s[i];
+                    ++i;
+                    if (q == '"') break;
+                }
+                continue;
+            }
+            if (c == ';') { out += c; ++i; at_cmd_start = true; expect_target = false; continue; }
+            if (c == '&') {
+                if (i + 1 < s.size() && s[i + 1] == '&') { out += "&&"; i += 2; }
+                else { out += c; ++i; }
+                at_cmd_start = true; expect_target = false;
+                continue;
+            }
+            if (c == '|') {
+                if (i + 1 < s.size() && s[i + 1] == '|') { out += "||"; i += 2; }
+                else { out += c; ++i; }
+                at_cmd_start = true; expect_target = false;
+                continue;
+            }
+            if (c == '>' || (c == '2' && i + 1 < s.size() && s[i + 1] == '>')) {
+                if (c == '2') { out += s.substr(i, 2); i += 2; }
+                else if (i + 1 < s.size() && s[i + 1] == '>') { out += ">>"; i += 2; }
+                else { out += c; ++i; }
+                at_cmd_start = false; expect_target = true;
+                continue;
+            }
+            if (c == '<') { out += c; ++i; at_cmd_start = false; expect_target = true; continue; }
+            if (std::isspace((unsigned char)c)) { out += c; ++i; continue; }
+            // word start
+            size_t w0 = i;
+            while (i < s.size() &&
+                   !std::isspace((unsigned char)s[i]) &&
+                   s[i] != ';' && s[i] != '&' && s[i] != '|' &&
+                   s[i] != '<' && s[i] != '>' &&
+                   s[i] != '\'' && s[i] != '"' && s[i] != '\\')
+                ++i;
+            std::string word = s.substr(w0, i - w0);
+            if (!at_cmd_start || expect_target) {
+                out += word;
+                at_cmd_start = false;
+                expect_target = false;
+                continue;
+            }
+            // command word: expand abbreviations and top-level aliases
+            std::string body;
+            auto ab = st.abbrs.find(word);
+            if (ab != st.abbrs.end()) body = ab->second;
+            for (int k = 0; k < 10; ++k) {
+                std::string fw = body.empty() ? word
+                    : (split_words(body).empty() ? "" : split_words(body).front());
+                auto it = st.aliases.find(fw);
+                if (it == st.aliases.end()) break;
+                if (body.empty()) {
+                    body = it->second;
+                } else {
+                    size_t cut = body.find(fw);
+                    body = it->second +
+                           body.substr(cut == std::string::npos ? 0 : cut + fw.size());
+                }
+            }
+            if (!body.empty()) {
+                out += body;      // remainder of the line continues scanning
+                at_cmd_start = false;
+                continue;
+            }
+            out += word;
+            at_cmd_start = false;
         }
-        // bash-style alias: expand first word (loop, max 10)
-        for (int k = 0; k < 10 && !w.empty(); ++k) {
-            auto it = st.aliases.find(w[0]);
-            if (it == st.aliases.end()) break;
-            s = it->second + s.substr(w[0].size());
-            w = split_words(s);
-        }
+        s = out;
     }
     return s;
 }
@@ -76,6 +164,16 @@ std::string preprocess(const std::string& line, ShellState& st, bool* skip) {
 
 static bool apply_redirs(const std::vector<Redir>& rs, std::string* err) {
     for (const auto& r : rs) {
+        // POSIX dup targets: `2>&1` (stderr follows stdout), `>&2` (stdout
+        // follows stderr). Order matters: `cmd >log 2>&1` sends both to log.
+        if (r.target == "&1") {
+            if (r.op == "2>" || r.op == "2>>") { dup2(STDOUT_FILENO, STDERR_FILENO); continue; }
+            if (r.op == ">" || r.op == ">>") continue;  // >&1 is a no-op
+        }
+        if (r.target == "&2") {
+            if (r.op == ">" || r.op == ">>") { dup2(STDERR_FILENO, STDOUT_FILENO); continue; }
+            if (r.op == "2>" || r.op == "2>>") continue;  // 2>&2 is a no-op
+        }
         int fd = -1;
         if (r.op == "<") fd = open(r.target.c_str(), O_RDONLY);
         else if (r.op == ">") fd = open(r.target.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
@@ -97,6 +195,25 @@ static bool apply_redirs(const std::vector<Redir>& rs, std::string* err) {
 
 // --- pipeline execution ---
 
+// Temporarily apply redirections to THIS process (fd swap), returning the
+// saved fds. restore_fds() puts everything back. Used so parent builtins
+// (`cd`, `posix`, `export`, `read`,...) keep their effects while honoring
+// `cmd >log`-style redirections, like bash.
+static std::array<int, 3> swap_fds(const std::vector<Redir>& rs,
+                                   std::string* err, bool* failed) {
+    std::array<int, 3> saved{dup(0), dup(1), dup(2)};
+    if (rs.empty()) { *failed = false; return saved; }
+    *failed = !apply_redirs(rs, err);
+    return saved;
+}
+
+static void restore_fds(const std::array<int, 3>& saved) {
+    for (int fd = 2; fd >= 0; --fd) {
+        dup2(saved[fd], fd);
+        close(saved[fd]);
+    }
+}
+
 static int run_pipeline(const Pipeline& pl, ShellState& st) {
     // Ang mode rejects POSIX leading assignments at *run* time (not parse
     // time) so `posix on; FOO=bar` and `set --posix on; FOO=bar` work
@@ -116,16 +233,27 @@ static int run_pipeline(const Pipeline& pl, ShellState& st) {
             }
         }
     }
-    // Parent-run builtin fast path: single command, no pipe, no redir-fork.
-    // (Redirections on builtins still apply: we fork for those to keep it simple.)
-    if (pl.cmds.size() == 1 && !pl.background && pl.cmds[0].redirs.empty()) {
+    // Parent-run builtin fast path: single command, no pipe — runs in THIS
+    // process so state (cd, posix, export...) actually changes. Redirections
+    // are applied by swapping fds around the builtin, bash-style, so
+    // `posix on >/dev/null`, `history >h.txt`, `read x <f` keep effects.
+    if (pl.cmds.size() == 1 && !pl.background) {
         const SimpleCmd& c = pl.cmds[0];
         // POSIX temp assignments without command: `FOO=bar` alone
         if (c.args.empty() && !c.assigns.empty()) {
+            std::string rerr;
+            bool failed = false;
+            auto saved = swap_fds(c.redirs, &rerr, &failed);
+            if (failed) {
+                fprintf(stderr, "%s%s\n", err_prefix().c_str(), rerr.c_str());
+                st.last_status = 2;
+                return 2;
+            }
             for (auto& a : c.assigns) {
                 std::string n, v; is_assign_word(a, &n, &v);
                 st.set_var(n, expand_one(v, st, QuoteKind::None), true);
             }
+            restore_fds(saved);
             st.last_status = 0;
             return 0;
         }
@@ -152,7 +280,22 @@ static int run_pipeline(const Pipeline& pl, ShellState& st) {
                     setenv(n.c_str(), v.c_str(), 1);
                 }
                 bool handled = false;
-                int rc = run_builtin(expanded, st, &handled);
+                int rc;
+                std::string rerr;
+                bool failed = false;
+                auto saved = swap_fds(c.redirs, &rerr, &failed);
+                if (failed) {
+                    restore_fds(saved);
+                    fprintf(stderr, "%s%s\n", err_prefix().c_str(), rerr.c_str());
+                    st.last_status = 2;
+                    return 2;
+                }
+                rc = run_builtin(expanded, st, &handled);
+                // flush C++ streams so buffered output lands in the
+                // redirected fd rather than after restore_fds()
+                std::cout.flush();
+                std::cerr.flush();
+                restore_fds(saved);
                 (void)handled;
                 st.last_status = rc;
                 return rc;

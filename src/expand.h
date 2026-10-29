@@ -13,7 +13,7 @@ namespace ang {
 
 std::string expand_one(const std::string& word, ShellState& st, QuoteKind qk);
 std::vector<std::string> expand_args(const std::vector<std::string>& words,
-                                     const std::vector<QuoteKind>& qkinds,
+                                     const std::vector<QuoteSpec>& qspecs,
                                      ShellState& st);
 
 }  // namespace ang

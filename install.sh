@@ -31,14 +31,14 @@ angsh installer
 
 Usage: install.sh [--version TAG] [--dir PATH]
 
-  --version TAG   install a specific release (default: latest), e.g. v0.1.2
+  --version TAG   install a specific release (default: latest), e.g. v0.1.3
   --dir PATH      where to put the binary
                   (default: /usr/local/bin if writable, else ~/.local/bin)
   -h, --help      show this help
 
 Examples:
   curl -fsSL https://raw.githubusercontent.com/0x251C08/ang.sh/main/install.sh | sh
-  curl -fsSL https://raw.githubusercontent.com/0x251C08/ang.sh/main/install.sh | sh -s -- --version v0.1.2
+  curl -fsSL https://raw.githubusercontent.com/0x251C08/ang.sh/main/install.sh | sh -s -- --version v0.1.3
 EOF
 }
 

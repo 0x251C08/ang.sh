@@ -24,7 +24,7 @@ struct Redir {
 
 struct SimpleCmd {
     std::vector<std::string> args;
-    std::vector<QuoteKind> quoted; // parallel to args
+    std::vector<QuoteSpec> quoted; // parallel to args
     std::vector<Redir> redirs;
     std::vector<std::string> assigns; // POSIX leading NAME=value words
 };

@@ -71,9 +71,22 @@ static std::string var_value(const std::string& name, ShellState& st) {
 std::string expand_one(const std::string& word, ShellState& st, QuoteKind qk) {
     if (qk == QuoteKind::Single) return word;  // '...' is fully literal
     std::string in = word;
-    std::string out;
+
+    // Pass A — expand $vars and $(...); carry backslash-escape pairs intact
+    // so pass B can decode them exactly once (protects \$, \*, \n, ...).
+    std::string mid;
     for (size_t i = 0; i < in.size();) {
         char c = in[i];
+        if (c == '\\' && i + 1 < in.size()) {
+            mid += '\\'; mid += in[i + 1];
+            i += 2;
+            continue;
+        }
+        if (c == '~' && i == 0 && (in.size() == 1 || in[1] == '/')) {
+            mid += home_dir();
+            ++i;
+            continue;
+        }
         if (c == '$' && i + 1 < in.size()) {
             if (in[i + 1] == '(') {
                 // $(...) — balanced-paren, quote-aware scan
@@ -94,46 +107,79 @@ std::string expand_one(const std::string& word, ShellState& st, QuoteKind qk) {
                     ++j;
                 }
                 if (depth == 0) {
-                    out += run_captured(in.substr(i + 2, j - (i + 2) - 1), st);
+                    mid += run_captured(in.substr(i + 2, j - (i + 2) - 1), st);
                     i = j;
                     continue;
                 }
                 // unbalanced: '$' stays literal
             } else if (in[i + 1] == '{') {
                 size_t e = in.find('}', i + 2);
-                if (e == std::string::npos) { out += c; ++i; continue; }
-                out += var_value(in.substr(i + 2, e - (i + 2)), st);
+                if (e == std::string::npos) { mid += c; ++i; continue; }
+                mid += var_value(in.substr(i + 2, e - (i + 2)), st);
                 i = e + 1;
                 continue;
             } else if (in[i + 1] == '?' || in[i + 1] == '$' || in[i + 1] == '!') {
-                out += var_value(in.substr(i + 1, 1), st);
+                mid += var_value(in.substr(i + 1, 1), st);
                 i += 2;
                 continue;
             } else if (std::isalpha((unsigned char)in[i + 1]) || in[i + 1] == '_') {
                 size_t j = i + 1;
                 while (j < in.size() &&
                        (std::isalnum((unsigned char)in[j]) || in[j] == '_')) ++j;
-                out += var_value(in.substr(i + 1, j - (i + 1)), st);
+                mid += var_value(in.substr(i + 1, j - (i + 1)), st);
                 i = j;
                 continue;
             }
         }
-        out += c;
+        mid += c;
         ++i;
+    }
+
+    // Pass B — decode escapes. Unquoted words: any \X loses the backslash.
+    // Double-quoted words: only \$ \" \\ \` lose the backslash; \n etc.
+    // stay literal, matching bash/fish.
+    std::string out;
+    for (size_t i = 0; i < mid.size(); ++i) {
+        char c = mid[i];
+        if (c == '\\' && i + 1 < mid.size()) {
+            char d = mid[i + 1];
+            if (qk == QuoteKind::Double) {
+                if (d == '$' || d == '"' || d == '\\' || d == '`') { out += d; ++i; continue; }
+                out += '\\';  // keep \X verbatim; X is appended next iteration
+                continue;
+            }
+            out += d;  // unquoted: anything may be escaped
+            ++i;
+            continue;
+        }
+        out += c;
     }
     return out;
 }
 
+// True if the *raw* word contains glob characters not preceded by a
+// backslash. Glob also requires QuoteKind::None (unquoted only).
+static bool raw_has_glob(const std::string& w) {
+    for (size_t i = 0; i < w.size(); ++i) {
+        char c = w[i];
+        if (c == '\\' && i + 1 < w.size()) { ++i; continue; }  // skip escaped pair
+        if (c == '*' || c == '?' || c == '[') return true;
+    }
+    return false;
+}
+
 std::vector<std::string> expand_args(const std::vector<std::string>& words,
-                                     const std::vector<QuoteKind>& qkinds,
+                                     const std::vector<QuoteSpec>& qspecs,
                                      ShellState& st) {
     std::vector<std::string> out;
     for (size_t k = 0; k < words.size(); ++k) {
-        std::string e = expand_one(words[k], st, qkinds[k]);
-        bool has_glob = qkinds[k] == QuoteKind::None &&
-            (e.find('*') != std::string::npos ||
-             e.find('?') != std::string::npos ||
-             e.find('[') != std::string::npos);
+        std::string e = expand_one(words[k], st, qspecs[k].kind);
+        // Empty unquoted results ($(true), unset vars) drop out of the arg
+        // list, like bash word splitting; quoted empties ("", '', "$(x)")
+        // stay as real args.
+        if (e.empty() && !qspecs[k].had_quotes) continue;
+        bool has_glob = qspecs[k].kind == QuoteKind::None &&
+                        raw_has_glob(words[k]);
         if (has_glob) {
             glob_t g{};
             if (glob(e.c_str(), GLOB_NOCHECK | GLOB_TILDE, nullptr, &g) == 0) {

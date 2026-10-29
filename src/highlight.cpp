@@ -26,7 +26,7 @@ static bool is_builtin_name(const std::string& c) {
     for (auto b : {"cd","exit","logout","export","unset","set","alias","unalias",
                    "abbr","posix","source",".","history","help","version","true",
                    "false","type","which","theme","env","echo","pwd","autocd",
-                   "read","jobs"})
+                   "read","jobs","wait"})
         if (c == b) return true;
     return false;
 }

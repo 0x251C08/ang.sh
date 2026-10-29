@@ -29,6 +29,7 @@ struct Token {
     TokKind kind = TokKind::End;
     std::string text;   // Word text, or operator spelling
     QuoteKind quote_kind = QuoteKind::None; // None = unquoted, Single = '...', Double = "..." / $(...)
+    bool had_quotes = false;                // word contained literal quote chars
 };
 
 std::vector<Token> lex(const std::string& line, std::string* err = nullptr);

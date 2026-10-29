@@ -4,6 +4,6 @@ set today $(date +%A)
 set here $(pwd)
 echo "today is $today"
 echo "you are in $here"
-echo "shell: $(basename "$SHELL")"
+echo "hostname: $(uname -n)"
 echo 'single quotes stay literal: $(not a command)'
 echo "status of last echo: $?"

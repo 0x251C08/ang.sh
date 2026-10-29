@@ -55,7 +55,8 @@ std::vector<std::string> complete(const std::string& prefix, ShellState& st,
     if (first_word) {
         for (auto b : {"cd","exit","export","unset","set","alias","unalias","abbr",
                        "posix","source","history","help","version","true","false",
-                       "type","theme","env","echo","pwd","autocd"})
+                       "type","theme","env","echo","pwd","autocd","read","jobs",
+                       "wait"})
             add(b);
         for (auto& kv : st.aliases) add(kv.first);
         for (auto& kv : st.abbrs) add(kv.first);
@@ -117,8 +118,9 @@ void render(const std::string& left, const std::string& right,
         if (used + rw + 1 < (size_t)w)
             out += std::string(w - used - rw, ' ') + "\033[2m" + right + "\033[0m";
     }
-    // move cursor back: ghost + (buf.size - cursor)
-    size_t back = ghost.size() + (buf.size() - cursor);
+    // move cursor back: ghost visible width + remainder-of-buffer visible
+    // width (columns, not bytes — buffers can hold multibyte characters)
+    size_t back = visible_len(ghost) + visible_len(buf.substr(cursor));
     if (back) out += "\033[" + std::to_string(back) + "D";
     printf("%s", out.c_str());
     fflush(stdout);

@@ -15,7 +15,7 @@
 #include "util.h"
 
 #ifndef ANG_VERSION
-#define ANG_VERSION "0.1.2"
+#define ANG_VERSION "0.1.3"
 #endif
 
 namespace {
@@ -122,6 +122,9 @@ int main(int argc, char** argv) {
     st.interactive = isatty(STDIN_FILENO) && script.empty() && cmd.empty();
     if (!no_config) ang::load_config(st);
     else ang::apply_defaults(st);
+    // Env override wins for scripting in every mode: ANG_POSIX=1 angsh
+    if (const char* p = getenv("ANG_POSIX"))
+        if (std::string(p) == "1" || std::string(p) == "on") st.posix = true;
 
     if (!cmd.empty()) return run_one(cmd, st);
 

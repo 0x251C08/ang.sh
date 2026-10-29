@@ -2,7 +2,7 @@
 
 <p align="center">
   <a href="https://github.com/0x251C08/ang.sh/actions/workflows/ci.yml"><img src="https://github.com/0x251C08/ang.sh/actions/workflows/ci.yml/badge.svg" alt="ci"></a>
-  <img src="https://img.shields.io/badge/version-0.1.2-blueviolet?style=flat-square" alt="version">
+  <img src="https://img.shields.io/badge/version-0.1.3-blueviolet?style=flat-square" alt="version">
   <img src="https://img.shields.io/badge/language-C%2B%2B17-00599C?style=flat-square" alt="C++17">
   <img src="https://img.shields.io/badge/dependencies-none-brightgreen?style=flat-square" alt="no deps">
   <img src="https://img.shields.io/badge/license-MIT-yellow?style=flat-square" alt="MIT">
@@ -14,7 +14,7 @@
  / _` | '_ \ / _` / __| '_ \
 | (_| | | | | (_| \__ \ | | |
  \__,_|_| |_|\__, |___/_| |_|
-              |___/  v0.1.2
+              |___/  v0.1.3
 ```
 
 A small Unix shell in C++ that takes the best ideas from **bash**, **zsh**, and
@@ -54,21 +54,16 @@ theme rice     # switch live, or set it in ~/.config/angsh/config.ang
 
 ## 🍬 What it borrowed
 
-| Feature                                                          | From       | In v0.1.0 |
-| ---------------------------------------------------------------- | ---------- | --------- |
-| pipes, `>`, `>>`, `<`, `2>`, `&>`, `&&`, `\|\|`, `;`, `&`        | bash/POSIX | ✅        |
-| `$VAR`, `${VAR}`, `$?`, `$$`, `$!`, `~`, glob `* ? []`           | bash       | ✅        |
-| history file, `!!` / `!$`, `alias`, `type`                       | bash       | ✅        |
-| left/right prompt themes, `autocd`, plugin dir                   | zsh        | ✅        |
-| ghost autosuggestions, inline highlighting, `abbr`, `set` syntax | fish       | ✅        |
-| pipes, `>`, `>>`, `<`, `2>`, `&>`, `&&`, `\|\|`, `;`, `&`        | bash/POSIX | ✅ v0.1.0 |
-| `$VAR`, `${VAR}`, `$?`, `$$`, `$!`, `~`, glob `* ? []`           | bash       | ✅ v0.1.0 |
-| history file, `!!` / `!$`, `alias`, `type`                       | bash       | ✅ v0.1.0 |
-| left/right prompt themes, `autocd`, plugin dir                   | zsh        | ✅ v0.1.0 |
-| ghost autosuggestions, inline highlighting, `abbr`, `set` syntax | fish       | ✅ v0.1.0 |
-| `$(...)` command substitution                                      | bash/zsh   | ✅ v0.1.2 |
-| `read [-p PROMPT] NAME`                                          | bash/fish  | ✅ v0.1.2 |
-| `&` background jobs + `jobs`                                     | bash/zsh   | ✅ v0.1.2 |
+| Feature                                                          | From       | Shipped in |
+| ---------------------------------------------------------------- | ---------- | ---------- |
+| pipes, `>`, `>>`, `<`, `2>`, `2>>`, `&>`, `2>&1`, `&&`, `\|\|`, `;`, `&` | bash/POSIX | v0.1.0 |
+| `$VAR`, `${VAR}`, `$?`, `$$`, `$!`, `~`, glob `* ? []`           | bash       | v0.1.0 |
+| history file, `!!` / `!$`, `alias`, `type`, `which`              | bash       | v0.1.0 |
+| left/right prompt themes, `autocd`, plugin dir                   | zsh        | v0.1.0 |
+| ghost autosuggestions, inline highlighting, `abbr`, `set` syntax | fish       | v0.1.0 |
+| `$(...)` command substitution                                    | bash/zsh   | v0.1.2 |
+| `read [-p PROMPT] NAME...`, `&` background jobs + `jobs`         | bash/fish  | v0.1.2 |
+| backslash escapes (`\$`, `\*`, `\n`), `wait`, `echo -e`, per-command `alias` | bash | v0.1.3 |
 | `if`/`for`/`while`, functions                                    | —          | ⏳ v0.2   |
 
 The interactive niceties are all there out of the box:
@@ -111,17 +106,17 @@ curl -fsSL https://raw.githubusercontent.com/0x251C08/ang.sh/main/install.sh | s
 Pin a version or pick a directory:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/0x251C08/ang.sh/main/install.sh | sh -s -- --version v0.1.2 --dir ~/bin
+curl -fsSL https://raw.githubusercontent.com/0x251C08/ang.sh/main/install.sh | sh -s -- --version v0.1.3 --dir ~/bin
 ```
 
 **Manual download** — Linux x86_64, fully static (no runtime dependencies):
 
 ```sh
-curl -LO https://github.com/0x251C08/ang.sh/releases/download/v0.1.2/angsh-v0.1.2-x86_64-linux
-curl -LO https://github.com/0x251C08/ang.sh/releases/download/v0.1.2/angsh-v0.1.2-x86_64-linux.sha256
-sha256sum -c angsh-v0.1.2-x86_64-linux.sha256
-chmod +x angsh-v0.1.2-x86_64-linux
-sudo mv angsh-v0.1.2-x86_64-linux /usr/local/bin/angsh
+curl -LO https://github.com/0x251C08/ang.sh/releases/download/v0.1.3/angsh-v0.1.3-x86_64-linux
+curl -LO https://github.com/0x251C08/ang.sh/releases/download/v0.1.3/angsh-v0.1.3-x86_64-linux.sha256
+sha256sum -c angsh-v0.1.3-x86_64-linux.sha256
+chmod +x angsh-v0.1.3-x86_64-linux
+sudo mv angsh-v0.1.3-x86_64-linux /usr/local/bin/angsh
 ```
 
 **From source** — any POSIX system with a C++17+ compiler and CMake 3.16+:
@@ -192,10 +187,31 @@ come in the future and may also be a mode later on.
 
 ## 🗺️ Roadmap
 
-- **v0.2** — `if`/`for`/`while` blocks (both syntaxes), functions, `$(...)`,
-  completion scripts
+- **v0.2** — `if`/`for`/`while` blocks (both syntaxes), functions, arithmetic
+  `$((...))`, completion scripts
 - **v0.3** — vi mode, async prompt, `~/.config/angsh/completions/`
 - **v1.0** — POSIX test-suite parity for the `--posix` subset
+
+## 📝 What's new
+
+**v0.1.3** fixes shell semantics across the board:
+
+- backslash escapes work like bash: `echo \$HOME` is literal, `echo \*`
+  doesn't glob, `"\n"` survives inside double quotes
+- unquoted substitution that yields nothing drops out of the arg list
+  (`$(true) cmd` no longer 能 spawn) — while `""` still counts as a real arg
+- `2>&1`, `>&2` and `>log 2>&1` ordering now respected
+- builtins keep their effects when redirected (`posix on >/dev/null`,
+  `history >h.txt`, `read x <answers.txt`)
+- `read` takes several names (`read a b` splits words, last gets the rest)
+  and prints its `-p` prompt on stderr like bash
+- `wait` joins every background job; `echo -e|-en` expands escapes
+- aliases/abbreviations now expand for every command in a line (`a; b; c`),
+  and `alias gh hub; gh` behaves like bash (takes effect next line)
+- tab completion and syntax highlighting know `read`, `jobs` and `wait`
+
+**v0.1.2** added command substitution `$(...)`, `read`, and background jobs
+with `[bg]`/`[done]` notifications and a `jobs` builtin.
 
 ## 📄 License
 

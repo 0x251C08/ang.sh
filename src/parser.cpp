@@ -63,7 +63,6 @@ bool parse(const std::vector<Token>& toks, bool posix_mode, JobList* out,
                         ++i;
                     } else {
                         std::string w = toks[i].text;
-                        auto q = toks[i].quote_kind;
                         if (first && is_assign_word(w)) {
                             // Accepted in both modes here; Ang-mode rejection
                             // happens at run time (executor) so that
@@ -74,7 +73,8 @@ bool parse(const std::vector<Token>& toks, bool posix_mode, JobList* out,
                         } else {
                             first = false;
                             cmd.args.push_back(w);
-                            cmd.quoted.push_back(q);
+                            cmd.quoted.push_back({toks[i].quote_kind,
+                                                  toks[i].had_quotes});
                             ++i;
                         }
                     }

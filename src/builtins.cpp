@@ -14,7 +14,7 @@
 #include <sys/wait.h>
 
 #ifndef ANG_VERSION
-#define ANG_VERSION "0.1.2"
+#define ANG_VERSION "0.1.3"
 #endif
 
 namespace ang {
@@ -34,7 +34,7 @@ bool is_parent_builtin(const std::string& name) {
            name == "alias" || name == "unalias" || name == "abbr" ||
            name == "posix" || name == "source" || name == "." ||
            name == "theme" || name == "autocd" || name == "history" ||
-           name == "read" || name == "jobs";
+           name == "read" || name == "jobs" || name == "wait";
 }
 
 int run_builtin(const std::vector<std::string>& args, ShellState& st,
@@ -63,6 +63,7 @@ int run_builtin(const std::vector<std::string>& args, ShellState& st,
     if (c == "env" || c == "printenv") return bi_env(args, st);
     if (c == "read") return bi_read(args, st);
     if (c == "jobs") return bi_jobs(args, st);
+    if (c == "wait") return bi_wait(args, st);
     if (c == "autocd") {
         if (args.size() > 1) st.autocd = (args[1] == "on" || args[1] == "1");
         std::cout << "autocd " << (st.autocd ? "on" : "off") << "\n";
@@ -101,12 +102,34 @@ int bi_exit(const std::vector<std::string>& a, ShellState& st) {
 
 int bi_echo(const std::vector<std::string>& a, ShellState& st) {
     (void)st;
-    bool nl = true;
+    bool nl = true, esc = false;
     size_t i = 1;
-    if (a.size() > 1 && a[1] == "-n") { nl = false; i = 2; }
+    // leading flags (-n, -e, -en, -ne) like bash
     for (; i < a.size(); ++i) {
-        if (i > (nl ? 1u : 2u)) std::cout << " ";
-        std::cout << a[i];
+        const std::string& f = a[i];
+        if (f == "-n") nl = false;
+        else if (f == "-e") esc = true;
+        else if (f == "-en" || f == "-ne") { nl = false; esc = true; }
+        else break;
+    }
+    bool first = true;
+    for (; i < a.size(); ++i) {
+        if (!first) std::cout << " ";
+        first = false;
+        if (!esc) { std::cout << a[i]; continue; }
+        for (size_t j = 0; j < a[i].size(); ++j) {
+            char c = a[i][j];
+            if (c == '\\' && j + 1 < a[i].size()) {
+                char d = a[i][j + 1];
+                if (d == 'n') std::cout << '\n';
+                else if (d == 't') std::cout << '\t';
+                else if (d == '\\') std::cout << '\\';
+                else std::cout << '\\' << d;
+                ++j;
+            } else {
+                std::cout << c;
+            }
+        }
     }
     if (nl) std::cout << "\n";
     std::cout.flush();
@@ -163,6 +186,7 @@ int bi_set(const std::vector<std::string>& a, ShellState& st) {
     }
     if (need_args(a, 3, "set NAME value...  (ang syntax; POSIX: export NAME=value)") == 2) return 2;
     if (!is_valid_name(a[1])) { std::cerr << "set: invalid name: " << a[1] << "\n"; return 1; }
+    // `set NAME` with no value errors; `set NAME ""` sets an empty value
     std::string v = join(std::vector<std::string>(a.begin() + 2, a.end()), " ");
     st.set_var(a[1], v, true);
     return 0;
@@ -270,13 +294,13 @@ int bi_help(const std::vector<std::string>&, ShellState&) {
             "angsh " ANG_VERSION " — builtin help\n"
             "Modes:  Ang (default): `set FOO bar`   POSIX: `export FOO=bar`, `FOO=bar cmd`\n"
             "        Toggle: `posix on|off`, `set --posix on|off`, `angsh --posix`\n"
-            "Flow:   cmd | cmd, >, >>, <, 2>, 2>>, &>, &&, ||, ;, & (bg)\n"
+            "Flow:   cmd | cmd, >, >>, <, 2>, 2>>, &>, 2>&1, &&, ||, ;, & (bg)\n"
             "Subst:  $(cmd) command substitution\n"
-            "Input:  read [-p PROMPT] NAME\n"
+            "Input:  read [-p PROMPT] NAME...\n"
             "Vars:   $NAME ${NAME} $? $$ $!   Glob: * ? [...]\n"
             "Builtins: cd pwd exit echo export unset set alias unalias abbr posix\n"
             "          source history help version true false type theme env autocd\n"
-            "          read jobs\n"
+            "          read jobs wait\n"
             "Ricing: ~/.config/angsh/config.ang, themes/<name>.conf, plugins/*.ang\n"
             "Keys:   Tab complete, Right/Ctrl-F accept suggestion, Up/Down history,\n"
             "        Ctrl-A/E/U/K/W, !! / !$ history expansion\n";
@@ -315,15 +339,18 @@ int bi_help(const std::vector<std::string>&, ShellState&) {
     row("  toggle: " + C + "posix on|off" + R + "  " + D + "or" + R + "  " +
         C + "angsh --posix" + R);
     row(H + "flow" + R);
-    row("  " + C + "cmd | cmd" + R + "   " + C + "> >> < 2> &>" + R + "   " +
-        C + "&& || ; &" + R);
+    row("  " + C + "cmd | cmd" + R + "   " + C + "> >> < 2> 2>&1 &>" + R +
+        "   " + C + "&& || ; &" + R);
+    row(H + "subst & input" + R);
+    row("  " + C + "$(cmd)" + R + D + "  output becomes the word" + R);
+    row("  " + C + "read [-p \"ask: \"] X Y" + R + D + "  line -> vars" + R);
     row(H + "variables" + R);
     row("  " + C + "$NAME ${NAME} $? $$ $!" + R + "   " + D + "glob:" + R +
         " " + C + "* ? [...]" + R);
     row(H + "builtins" + R);
     row("  cd pwd exit echo export unset set alias unalias");
     row("  abbr posix source history help version type theme");
-    row("  env autocd true false");
+    row("  env autocd true false read jobs wait");
     row(H + "ricing" + R);
     row("  " + D + "~/.config/angsh/" + R + "config.ang theme.conf plugins/*.ang");
     row("  " + C + "theme rice" + R + "  " + D + "(default minimal rice power mono)" + R);
@@ -350,8 +377,7 @@ int bi_type(const std::vector<std::string>& a, ShellState& st) {
     for (size_t i = 1; i < a.size(); ++i) {
         bool isb = is_parent_builtin(a[i]) || a[i]=="echo" || a[i]=="pwd" ||
                    a[i]=="true" || a[i]=="false" || a[i]=="type" || a[i]=="help" ||
-                   a[i]=="version" || a[i]=="env";
-        auto al = st.aliases.find(a[i]);
+                   a[i]=="version" || a[i]=="env" || a[i]=="which";        auto al = st.aliases.find(a[i]);
         auto ab = st.abbrs.find(a[i]);
         if (isb) std::cout << a[i] << " is a shell builtin\n";
         else if (al != st.aliases.end()) std::cout << a[i] << " is an alias: " << al->second << "\n";
@@ -366,21 +392,52 @@ int bi_env(const std::vector<std::string>&, ShellState& st) {
     return 0;
 }
 
-// read [-p PROMPT] NAME  — read one line from stdin into NAME (fish/bash-like)
+// read [-p PROMPT] NAME...  — read one line from stdin (fish/bash-like).
+// One name: whole line. Several: split on whitespace, last gets the rest.
 int bi_read(const std::vector<std::string>& a, ShellState& st) {
     std::string prompt;
     size_t i = 1;
     if (i < a.size() && a[i] == "-p" && i + 1 < a.size()) { prompt = a[++i]; ++i; }
-    if (i >= a.size()) { std::cerr << "usage: read [-p PROMPT] NAME\n"; return 2; }
-    if (!prompt.empty()) { std::cout << prompt; std::cout.flush(); }
+    if (i >= a.size()) { std::cerr << "usage: read [-p PROMPT] NAME...\n"; return 2; }
+    if (!prompt.empty()) { std::cerr << prompt; std::cerr.flush(); }  // stderr, like bash
     std::string line;
     if (!std::getline(std::cin, line)) {
-        st.set_var(a[i], "", true);
+        for (size_t k = i; k < a.size(); ++k) st.set_var(a[k], "", true);
         return 1;  // EOF
     }
-    st.set_var(a[i], line, true);
+    auto issp = [](char c) { return std::isspace((unsigned char)c) != 0; };
+    size_t pos = 0;
+    for (size_t k = i; k < a.size(); ++k) {
+        std::string val;
+        if (a.size() == i + 1) {
+            val = line;  // single name: whole line, no splitting
+        } else if (k == a.size() - 1) {
+            while (pos < line.size() && issp(line[pos])) ++pos;
+            val = line.substr(pos);  // last name gets the remainder
+        } else {
+            while (pos < line.size() && issp(line[pos])) ++pos;
+            size_t s = pos;
+            while (pos < line.size() && !issp(line[pos])) ++pos;
+            val = line.substr(s, pos - s);
+        }
+        st.set_var(a[k], val, true);
+    }
     st.last_status = 0;
     return 0;
+}
+
+// wait — block until every background job started with `&` has finished
+int bi_wait(const std::vector<std::string>&, ShellState& st) {
+    int rc = 0;
+    for (auto& j : st.bg_jobs) {
+        if (j.reaped) continue;
+        int ws = 0;
+        if (waitpid(j.pid, &ws, 0) < 0) continue;  // already gone somehow
+        j.reaped = true;
+        j.status = WIFEXITED(ws) ? WEXITSTATUS(ws) : 128 + WTERMSIG(ws);
+        rc = j.status;
+    }
+    return rc;
 }
 
 // jobs — list background jobs started with `&`

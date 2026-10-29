@@ -28,6 +28,14 @@ std::string cwd_short();    // /home/u/Code -> ~/Code
 // Quoting context of a word: None = unquoted, Single = '...', Double = "..." or $(...)
 enum class QuoteKind { None, Single, Double };
 
+// Quote context of one word: syntactic kind + whether literal quote chars
+// appeared (lex strips them). Distinctes `""` (kept when empty) from
+// `$(empty)` (dropped when empty, bash-like) — both are Double.
+struct QuoteSpec {
+    QuoteKind kind = QuoteKind::None;
+    bool had_quotes = false;
+};
+
 // Color support: false when NO_COLOR is set, TERM=dumb, or fd is not a TTY.
 bool use_color(int fd);
 // "angsh:" prefix for errors — red when stderr is a color terminal.

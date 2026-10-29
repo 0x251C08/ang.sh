@@ -32,11 +32,19 @@ std::vector<Token> lex(const std::string& line, std::string* err) {
         if (c == '>') {
             if (i + 1 < n && line[i + 1] == '>') { push(TokKind::RedirAppend, ">>"); i += 2; }
             else { push(TokKind::RedirOut, ">"); ++i; }
+            // >&2 — stdout dup'd to stderr (POSIX), handled as op + target
+            if (i < n && line[i] == '&' && i + 1 < n && line[i + 1] == '2') {
+                push(TokKind::Word, "&2"); i += 2;
+            }
             continue;
         }
         if (c == '2' && i + 1 < n && line[i + 1] == '>') {
             if (i + 2 < n && line[i + 2] == '>') { push(TokKind::RedirErrAppend, "2>>"); i += 3; }
             else { push(TokKind::RedirErr, "2>"); i += 2; }
+            // 2>&1 — stderr dup'd to stdout (POSIX), handled as op + target
+            if (i < n && line[i] == '&' && i + 1 < n && line[i + 1] == '1') {
+                push(TokKind::Word, "&1"); i += 2;
+            }
             continue;
         }
         // Word (with quoting)
@@ -44,6 +52,7 @@ std::vector<Token> lex(const std::string& line, std::string* err) {
         QuoteKind qk = QuoteKind::None;
         bool in_single = false, in_double = false;
         bool any = false;
+        bool saw_quote = false;   // literal quote chars appeared in this word
         while (i < n) {
             char d = line[i];
             if (in_single) {
@@ -53,13 +62,20 @@ std::vector<Token> lex(const std::string& line, std::string* err) {
             }
             if (in_double) {
                 if (d == '"') { in_double = false; ++i; }
-                else if (d == '\\' && i + 1 < n) { w += line[i + 1]; i += 2; }
-                else { w += d; ++i; }
+                // keep escape pairs intact; expansion decodes \$ \" \\ \` only
+                else if (d == '\\' && i + 1 < n &&
+                         (line[i + 1] == '$' || line[i + 1] == '"' ||
+                          line[i + 1] == '\\' || line[i + 1] == '`')) {
+                    w += '\\'; w += line[i + 1]; i += 2;
+                } else { w += d; ++i; }
                 continue;
             }
-            if (d == '\'') { in_single = true; qk = QuoteKind::Single; ++i; any = true; continue; }
-            if (d == '"') { in_double = true; qk = QuoteKind::Double; ++i; any = true; continue; }
-            if (d == '\\' && i + 1 < n) { w += line[i + 1]; qk = QuoteKind::Double; i += 2; any = true; continue; }
+            if (d == '\'') { in_single = true; qk = QuoteKind::Single; saw_quote = true; ++i; any = true; continue; }
+            if (d == '"') { in_double = true; qk = QuoteKind::Double; saw_quote = true; ++i; any = true; continue; }
+            // keep escape pairs so expansion can protect the char (e.g. \$, \*);
+            // quote kind stays None — decoding happens in expansion, and glob
+            // is skipped via raw_has_glob() on escaped glob characters
+            if (d == '\\' && i + 1 < n) { w += '\\'; w += line[i + 1]; i += 2; any = true; continue; }
             if (!in_single && d == '$' && i + 1 < n && line[i + 1] == '(') {
                 // command substitution $(...): scan to matching ')', quote-aware
                 size_t depth = 1, j = i + 2;
@@ -87,7 +103,7 @@ std::vector<Token> lex(const std::string& line, std::string* err) {
                 }
                 // unbalanced: '$' stays literal
             }
-            if (d == ' ' || d == '\t' || d == '\r' || d == '\n' || d == ';' || d == '|' || d == '&' || d == '<' || d == '>' || d == '#') break;
+            if (d == ' ' || d == '\t' || d == '\r' || d == '\n' || d == ';' || d == '|' || d == '&' || d == '<' || d == '>' || (d == '#' && w.empty())) break;
             w += d; ++i; any = true;
         }
         if (in_single || in_double) {
@@ -100,9 +116,13 @@ std::vector<Token> lex(const std::string& line, std::string* err) {
             if (qk == QuoteKind::None && w == "2" && i < n && line[i] == '>') {
                 if (i + 1 < n && line[i + 1] == '>') { push(TokKind::RedirErrAppend, "2>>"); i += 2; }
                 else { push(TokKind::RedirErr, "2>"); ++i; }
+                if (i < n && line[i] == '&' && i + 1 < n && line[i + 1] == '1') {
+                    push(TokKind::Word, "&1"); i += 2;
+                }
                 continue;
             }
             Token t; t.kind = TokKind::Word; t.text = w; t.quote_kind = qk;
+            t.had_quotes = saw_quote;
             out.push_back(t);
         }
     }
