@@ -25,7 +25,8 @@ static bool on_path(const std::string& cmd) {
 static bool is_builtin_name(const std::string& c) {
     for (auto b : {"cd","exit","logout","export","unset","set","alias","unalias",
                    "abbr","posix","source",".","history","help","version","true",
-                   "false","type","which","theme","env","echo","pwd","autocd"})
+                   "false","type","which","theme","env","echo","pwd","autocd",
+                   "read","jobs"})
         if (c == b) return true;
     return false;
 }
@@ -54,7 +55,7 @@ std::string highlight_line(const std::string& line, const ShellState& st) {
                 out += ok ? "\033[1;32m" + tk.text + "\033[0m"
                           : "\033[1;31m" + tk.text + "\033[0m";
                 first_word = false;
-            } else if (tk.quoted) {
+            } else if (tk.quote_kind != QuoteKind::None) {
                 out += "\033[33m" + tk.text + "\033[0m";
             } else if (!tk.text.empty() && tk.text[0] == '-') {
                 out += "\033[96m" + tk.text + "\033[0m";

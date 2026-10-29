@@ -11,9 +11,10 @@
 #include <iostream>
 #include <unistd.h>
 #include <limits.h>
+#include <sys/wait.h>
 
 #ifndef ANG_VERSION
-#define ANG_VERSION "0.1.1"
+#define ANG_VERSION "0.1.2"
 #endif
 
 namespace ang {
@@ -32,7 +33,8 @@ bool is_parent_builtin(const std::string& name) {
            name == "export" || name == "unset" || name == "set" ||
            name == "alias" || name == "unalias" || name == "abbr" ||
            name == "posix" || name == "source" || name == "." ||
-           name == "theme" || name == "autocd" || name == "history";
+           name == "theme" || name == "autocd" || name == "history" ||
+           name == "read" || name == "jobs";
 }
 
 int run_builtin(const std::vector<std::string>& args, ShellState& st,
@@ -59,6 +61,8 @@ int run_builtin(const std::vector<std::string>& args, ShellState& st,
     if (c == "type" || c == "which") return bi_type(args, st);
     if (c == "theme") return bi_theme(args, st);
     if (c == "env" || c == "printenv") return bi_env(args, st);
+    if (c == "read") return bi_read(args, st);
+    if (c == "jobs") return bi_jobs(args, st);
     if (c == "autocd") {
         if (args.size() > 1) st.autocd = (args[1] == "on" || args[1] == "1");
         std::cout << "autocd " << (st.autocd ? "on" : "off") << "\n";
@@ -126,8 +130,13 @@ int bi_export(const std::vector<std::string>& a, ShellState& st) {
         std::string n, v;
         if (is_assign_word(a[i], &n, &v)) st.set_var(n, v, true);
         else if (is_valid_name(a[i])) {
+            // export NAME: promote an environ-only variable too, keeping
+            // its value instead of clobbering it to empty.
+            std::string val;
             auto it = st.vars.find(a[i]);
-            setenv(a[i].c_str(), it == st.vars.end() ? "" : it->second.c_str(), 1);
+            if (it != st.vars.end()) val = it->second;
+            else if (const char* e = std::getenv(a[i].c_str())) val = e;
+            st.set_var(a[i], val, true);
         } else {
             std::cerr << "export: invalid name: " << a[i] << "\n";
             return 1;
@@ -262,9 +271,12 @@ int bi_help(const std::vector<std::string>&, ShellState&) {
             "Modes:  Ang (default): `set FOO bar`   POSIX: `export FOO=bar`, `FOO=bar cmd`\n"
             "        Toggle: `posix on|off`, `set --posix on|off`, `angsh --posix`\n"
             "Flow:   cmd | cmd, >, >>, <, 2>, 2>>, &>, &&, ||, ;, & (bg)\n"
+            "Subst:  $(cmd) command substitution\n"
+            "Input:  read [-p PROMPT] NAME\n"
             "Vars:   $NAME ${NAME} $? $$ $!   Glob: * ? [...]\n"
             "Builtins: cd pwd exit echo export unset set alias unalias abbr posix\n"
             "          source history help version true false type theme env autocd\n"
+            "          read jobs\n"
             "Ricing: ~/.config/angsh/config.ang, themes/<name>.conf, plugins/*.ang\n"
             "Keys:   Tab complete, Right/Ctrl-F accept suggestion, Up/Down history,\n"
             "        Ctrl-A/E/U/K/W, !! / !$ history expansion\n";
@@ -351,6 +363,40 @@ int bi_type(const std::vector<std::string>& a, ShellState& st) {
 
 int bi_env(const std::vector<std::string>&, ShellState& st) {
     for (auto& kv : st.vars) std::cout << kv.first << "=" << kv.second << "\n";
+    return 0;
+}
+
+// read [-p PROMPT] NAME  — read one line from stdin into NAME (fish/bash-like)
+int bi_read(const std::vector<std::string>& a, ShellState& st) {
+    std::string prompt;
+    size_t i = 1;
+    if (i < a.size() && a[i] == "-p" && i + 1 < a.size()) { prompt = a[++i]; ++i; }
+    if (i >= a.size()) { std::cerr << "usage: read [-p PROMPT] NAME\n"; return 2; }
+    if (!prompt.empty()) { std::cout << prompt; std::cout.flush(); }
+    std::string line;
+    if (!std::getline(std::cin, line)) {
+        st.set_var(a[i], "", true);
+        return 1;  // EOF
+    }
+    st.set_var(a[i], line, true);
+    st.last_status = 0;
+    return 0;
+}
+
+// jobs — list background jobs started with `&`
+int bi_jobs(const std::vector<std::string>&, ShellState& st) {
+    if (st.bg_jobs.empty()) { std::cout << "no background jobs\n"; return 0; }
+    for (auto& j : st.bg_jobs) {
+        if (!j.reaped) {
+            int ws = 0;
+            if (waitpid(j.pid, &ws, WNOHANG) != 0) {  // just finished
+                j.reaped = true;
+                j.status = WIFEXITED(ws) ? WEXITSTATUS(ws) : 128 + WTERMSIG(ws);
+            }
+        }
+        std::string state = j.reaped ? "done" : "running";
+        std::printf("[%d] %-8s %s\n", (int)j.pid, state.c_str(), j.cmd.c_str());
+    }
     return 0;
 }
 

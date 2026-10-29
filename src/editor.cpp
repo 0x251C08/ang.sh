@@ -111,7 +111,7 @@ void render(const std::string& left, const std::string& right,
     std::string out = "\r\033[K" + left + hl + "\033[2m" + ghost + "\033[0m";
     // right prompt: pad to terminal width
     if (!right.empty()) {
-        size_t used = visible_len(left) + buf.size() + ghost.size();
+        size_t used = visible_len(left) + visible_len(buf) + visible_len(ghost);
         size_t rw = visible_len(right);
         int w = term_width();
         if (used + rw + 1 < (size_t)w)

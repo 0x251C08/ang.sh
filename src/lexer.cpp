@@ -41,7 +41,7 @@ std::vector<Token> lex(const std::string& line, std::string* err) {
         }
         // Word (with quoting)
         std::string w;
-        bool quoted = false;
+        QuoteKind qk = QuoteKind::None;
         bool in_single = false, in_double = false;
         bool any = false;
         while (i < n) {
@@ -57,9 +57,36 @@ std::vector<Token> lex(const std::string& line, std::string* err) {
                 else { w += d; ++i; }
                 continue;
             }
-            if (d == '\'') { in_single = true; quoted = true; ++i; any = true; continue; }
-            if (d == '"') { in_double = true; quoted = true; ++i; any = true; continue; }
-            if (d == '\\' && i + 1 < n) { w += line[i + 1]; quoted = true; i += 2; any = true; continue; }
+            if (d == '\'') { in_single = true; qk = QuoteKind::Single; ++i; any = true; continue; }
+            if (d == '"') { in_double = true; qk = QuoteKind::Double; ++i; any = true; continue; }
+            if (d == '\\' && i + 1 < n) { w += line[i + 1]; qk = QuoteKind::Double; i += 2; any = true; continue; }
+            if (!in_single && d == '$' && i + 1 < n && line[i + 1] == '(') {
+                // command substitution $(...): scan to matching ')', quote-aware
+                size_t depth = 1, j = i + 2;
+                bool sq = false, dq = false;
+                while (j < n && depth > 0) {
+                    char c = line[j];
+                    if (sq) { if (c == '\'') sq = false; }
+                    else if (dq) {
+                        if (c == '"') dq = false;
+                        else if (c == '\\' && j + 1 < n) ++j;
+                    } else {
+                        if (c == '\'') sq = true;
+                        else if (c == '"') dq = true;
+                        else if (c == '(') ++depth;
+                        else if (c == ')') --depth;
+                    }
+                    ++j;
+                }
+                if (depth == 0) {
+                    w += line.substr(i, j - i);   // keep the $(...) text verbatim
+                    qk = QuoteKind::Double;       // expands; output is not re-globed/re-split
+                    i = j;
+                    any = true;
+                    continue;
+                }
+                // unbalanced: '$' stays literal
+            }
             if (d == ' ' || d == '\t' || d == '\r' || d == '\n' || d == ';' || d == '|' || d == '&' || d == '<' || d == '>' || d == '#') break;
             w += d; ++i; any = true;
         }
@@ -67,15 +94,15 @@ std::vector<Token> lex(const std::string& line, std::string* err) {
             if (err) *err = "unterminated quote";
             return {};
         }
-        if (any || quoted) {
+        if (any || qk != QuoteKind::None) {
             // bash-style `2>` / `2>>`: an unquoted word that is exactly "2"
             // immediately followed by '>' is a stderr redirect, not an arg.
-            if (!quoted && w == "2" && i < n && line[i] == '>') {
+            if (qk == QuoteKind::None && w == "2" && i < n && line[i] == '>') {
                 if (i + 1 < n && line[i + 1] == '>') { push(TokKind::RedirErrAppend, "2>>"); i += 2; }
                 else { push(TokKind::RedirErr, "2>"); ++i; }
                 continue;
             }
-            Token t; t.kind = TokKind::Word; t.text = w; t.quoted = quoted;
+            Token t; t.kind = TokKind::Word; t.text = w; t.quote_kind = qk;
             out.push_back(t);
         }
     }

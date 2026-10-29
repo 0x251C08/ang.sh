@@ -12,6 +12,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include "util.h"
 #include "lexer.h"
 
 namespace ang {
@@ -23,7 +24,7 @@ struct Redir {
 
 struct SimpleCmd {
     std::vector<std::string> args;
-    std::vector<bool> quoted;   // parallel to args
+    std::vector<QuoteKind> quoted; // parallel to args
     std::vector<Redir> redirs;
     std::vector<std::string> assigns; // POSIX leading NAME=value words
 };

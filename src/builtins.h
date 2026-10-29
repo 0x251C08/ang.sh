@@ -39,6 +39,8 @@ int bi_false(const std::vector<std::string>& a, ShellState& st);
 int bi_type(const std::vector<std::string>& a, ShellState& st);
 int bi_theme(const std::vector<std::string>& a, ShellState& st);
 int bi_env(const std::vector<std::string>& a, ShellState& st);
+int bi_read(const std::vector<std::string>& a, ShellState& st);
+int bi_jobs(const std::vector<std::string>& a, ShellState& st);
 
 extern bool g_should_exit;
 extern int g_exit_code;

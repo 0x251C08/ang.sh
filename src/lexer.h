@@ -4,6 +4,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include "util.h"
 
 namespace ang {
 
@@ -26,8 +27,8 @@ enum class TokKind {
 
 struct Token {
     TokKind kind = TokKind::End;
-    std::string text;  // Word text, or operator spelling
-    bool quoted = false; // true if any part was single/double quoted (skips glob)
+    std::string text;   // Word text, or operator spelling
+    QuoteKind quote_kind = QuoteKind::None; // None = unquoted, Single = '...', Double = "..." / $(...)
 };
 
 std::vector<Token> lex(const std::string& line, std::string* err = nullptr);

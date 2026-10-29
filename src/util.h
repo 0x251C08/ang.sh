@@ -25,6 +25,9 @@ std::string join(const std::vector<std::string>& v, const std::string& sep);
 std::string basename_of(const std::string& path);
 std::string cwd_short();    // /home/u/Code -> ~/Code
 
+// Quoting context of a word: None = unquoted, Single = '...', Double = "..." or $(...)
+enum class QuoteKind { None, Single, Double };
+
 // Color support: false when NO_COLOR is set, TERM=dumb, or fd is not a TTY.
 bool use_color(int fd);
 // "angsh:" prefix for errors — red when stderr is a color terminal.

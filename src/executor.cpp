@@ -124,7 +124,7 @@ static int run_pipeline(const Pipeline& pl, ShellState& st) {
         if (c.args.empty() && !c.assigns.empty()) {
             for (auto& a : c.assigns) {
                 std::string n, v; is_assign_word(a, &n, &v);
-                st.set_var(n, expand_one(v, st, false), true);
+                st.set_var(n, expand_one(v, st, QuoteKind::None), true);
             }
             st.last_status = 0;
             return 0;
@@ -135,7 +135,7 @@ static int run_pipeline(const Pipeline& pl, ShellState& st) {
             // apply POSIX leading assigns as temp env for this command
             for (auto& a : c.assigns) {
                 std::string n, v; is_assign_word(a, &n, &v);
-                expanded.insert(expanded.begin(), n + "=" + expand_one(v, st, false));
+                expanded.insert(expanded.begin(), n + "=" + expand_one(v, st, QuoteKind::None));
             }
             // split VAR=x prefixes back out for the child env
             std::vector<std::string> tmps;
@@ -172,11 +172,17 @@ static int run_pipeline(const Pipeline& pl, ShellState& st) {
         runner = fork();
         if (runner < 0) { perror("fork"); return 1; }
         if (runner != 0) {
-            // parent: don't wait; print job pid (zsh/bash style)
+            // parent: don't wait; print job pid (zsh/bash style).
+            // Track the job so it can be reaped and reported later.
             st.last_bg_pid = runner;
             if (prev_read >= 0) close(prev_read);
             fprintf(stderr, "[bg] %d\n", (int)runner);
-            signal(SIGCHLD, SIG_IGN);
+            std::string cmdline;
+            for (auto& s : pl.cmds[0].args) {
+                if (!cmdline.empty()) cmdline += " ";
+                cmdline += s;
+            }
+            st.bg_jobs.push_back({runner, cmdline, false, 0});
             st.last_status = 0;
             return 0;
         }
@@ -201,7 +207,7 @@ static int run_pipeline(const Pipeline& pl, ShellState& st) {
             const SimpleCmd& c = pl.cmds[k];
             for (auto& a : c.assigns) {
                 std::string nn, vv; is_assign_word(a, &nn, &vv);
-                setenv(nn.c_str(), expand_one(vv, st, false).c_str(), 1);
+                setenv(nn.c_str(), expand_one(vv, st, QuoteKind::None).c_str(), 1);
             }
             std::vector<std::string> expanded =
                 expand_args(c.args, c.quoted, st);

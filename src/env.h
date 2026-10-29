@@ -2,6 +2,7 @@
 #pragma once
 #include <map>
 #include <string>
+#include <sys/types.h>
 #include <vector>
 
 namespace ang {
@@ -27,6 +28,16 @@ struct ShellState {
 
     std::string history_file;
     bool interactive = false;
+
+    // Background jobs started with `&`. Reaped before each prompt (main.cpp)
+    // and on demand by the `jobs` builtin.
+    struct BgJob {
+        pid_t pid = 0;
+        std::string cmd;
+        bool reaped = false;
+        int status = 0;
+    };
+    std::vector<BgJob> bg_jobs;
 
     std::string get(const std::string& k, const std::string& dflt = "") const;
     void set_var(const std::string& k, const std::string& v, bool export_env);

@@ -111,6 +111,12 @@ std::string render_prompt(const std::string& tmpl, const ShellState& st) {
     replace_all(s, "{git}", gb.empty() ? "" : "(" + gb + ")");
     replace_all(s, "{branch}", gb.empty() ? "" : " ⎇ " + gb);
     replace_all(s, "{mode}", st.posix ? "◈posix " : "");
+    {
+        size_t njobs = 0;
+        for (auto& j : st.bg_jobs)
+            if (!j.reaped) ++njobs;
+        replace_all(s, "{jobs}", std::to_string(njobs));
+    }
     replace_all(s, "{time}", tbuf);
     replace_all(s, "{ok}", ok ? "\033[32m✓\033[0m" : "\033[31m✗\033[0m");
     replace_all(s, "{fail}",

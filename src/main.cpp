@@ -2,7 +2,9 @@
 #include <unistd.h>
 #include <filesystem>
 #include <iostream>
+#include <cstdio>
 #include <signal.h>
+#include <sys/wait.h>
 #include "builtins.h"
 #include "config.h"
 #include "editor.h"
@@ -13,7 +15,7 @@
 #include "util.h"
 
 #ifndef ANG_VERSION
-#define ANG_VERSION "0.1.1"
+#define ANG_VERSION "0.1.2"
 #endif
 
 namespace {
@@ -29,6 +31,11 @@ void usage() {
 }
 
 int run_chunk(const std::string& raw, ang::ShellState& st);
+
+// SIGCHLD handler: just flip a flag; reaping happens in the main loop
+// (async-signal-safe). waitpid in a handler is not safe.
+static volatile sig_atomic_t g_bg_tick = 0;
+static void on_sigchld(int /*sig*/) { g_bg_tick = 1; }
 
 int run_one(const std::string& raw, ang::ShellState& st) {
     // Process line-by-line (like bash reading script lines): this lets
@@ -107,8 +114,10 @@ int main(int argc, char** argv) {
         else { script = a; break; }
     }
 
-    // Parent ignores Ctrl-C; foreground children restore default (see executor).
+    // Parent ignores Ctrl-C (foreground children restore default, see executor).
+    // Background jobs report completion via SIGCHLD -> g_bg_tick -> reap below.
     signal(SIGINT, SIG_IGN);
+    signal(SIGCHLD, on_sigchld);
 
     st.interactive = isatty(STDIN_FILENO) && script.empty() && cmd.empty();
     if (!no_config) ang::load_config(st);
@@ -142,6 +151,22 @@ int main(int argc, char** argv) {
     }
 
     while (!ang::g_should_exit) {
+        // Reap finished background jobs and report them before drawing the prompt.
+        if (g_bg_tick) {
+            g_bg_tick = 0;
+            bool any = false;
+            for (auto& j : st.bg_jobs) {
+                if (j.reaped) continue;
+                int ws = 0;
+                if (waitpid(j.pid, &ws, WNOHANG) == 0) continue;  // still running
+                j.reaped = true;
+                j.status = WIFEXITED(ws) ? WEXITSTATUS(ws) : 128 + WTERMSIG(ws);
+                std::fprintf(stderr, "\r[done] %d (%d) %s\n", (int)j.pid, j.status,
+                             j.cmd.c_str());
+                any = true;
+            }
+            if (any) std::fflush(stderr);
+        }
         // Piped stdin: no prompts, run like a script.
         std::string left = st.interactive ? ang::render_prompt(st.prompt_left, st) : "";
         std::string right = st.interactive ? ang::render_prompt(st.prompt_right, st) : "";

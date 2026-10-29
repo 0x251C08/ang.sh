@@ -2,7 +2,7 @@
 
 <p align="center">
   <a href="https://github.com/0x251C08/ang.sh/actions/workflows/ci.yml"><img src="https://github.com/0x251C08/ang.sh/actions/workflows/ci.yml/badge.svg" alt="ci"></a>
-  <img src="https://img.shields.io/badge/version-0.1.1-blueviolet?style=flat-square" alt="version">
+  <img src="https://img.shields.io/badge/version-0.1.2-blueviolet?style=flat-square" alt="version">
   <img src="https://img.shields.io/badge/language-C%2B%2B17-00599C?style=flat-square" alt="C++17">
   <img src="https://img.shields.io/badge/dependencies-none-brightgreen?style=flat-square" alt="no deps">
   <img src="https://img.shields.io/badge/license-MIT-yellow?style=flat-square" alt="MIT">
@@ -10,15 +10,15 @@
 </p>
 
 ```
-   __ _ _ __   __ _ ___| |__
-  / _` | '_ \ / _` / __| '_ \
- | (_| | | | | (_| \__ \ | | |
-  \__,_|_| |_|\__, |___/_| |_|
-               |___/  v0.1.1
+  __ _ _ __   __ _ ___| |__
+ / _` | '_ \ / _` / __| '_ \
+| (_| | | | | (_| \__ \ | | |
+ \__,_|_| |_|\__, |___/_| |_|
+              |___/  v0.1.2
 ```
 
-A small Unix shell in C++ that takes the best ideas from **bash**, **zsh**,
-and **fish** — with two syntax modes, **Ang** (modern, default) and **POSIX**
+A small Unix shell in C++ that takes the best ideas from **bash**, **zsh**, and
+**fish** — with two syntax modes, **Ang** (modern, default) and **POSIX**
 (compatible) — and builds them into something you can live in and style.
 
 ## ✨ The look
@@ -30,23 +30,23 @@ and **fish** — with two syntax modes, **Ang** (modern, default) and **POSIX**
 That's the `rice` theme. `default`, `minimal`, `power`, and `mono` also ship.
 The prompt renderer understands:
 
-| Kind | Placeholders |
-|---|---|
-| **segments** | `{user}` `{host}` `{cwd}` `{base}` `{status}` `{char}` `{git}` `{branch}` `{mode}` `{time}` |
-| **status art** | `{ok}` ✓ / `{fail}` ✗ code / `{arrow}` ❯ that turns red on failure |
-| **color** | `{red}`…`{white}`, `{br_red}`…`{br_white}`, 256-color `{orange}` `{purple}` `{pink}` `{gray}` `{teal}` `{lime}` |
-| **backgrounds** | `{on_black}` `{on_red}` `{on_green}` `{on_yellow}` `{on_blue}` `{on_magenta}` `{on_cyan}` `{on_white}` |
-| **style** | `{dim}` `{bold}` `{reset}` |
+| Kind            | Placeholders                                                                                                    |
+| --------------- | --------------------------------------------------------------------------------------------------------------- |
+| **segments**    | `{user}` `{host}` `{cwd}` `{base}` `{status}` `{char}` `{git}` `{branch}` `{mode}` `{time}`                     |
+| **status art**  | `{ok}` ✓ / `{fail}` ✗ code / `{arrow}` ❯ that turns red on failure                                              |
+| **color**       | `{red}`…`{white}`, `{br_red}`…`{br_white}`, 256-color `{orange}` `{purple}` `{pink}` `{gray}` `{teal}` `{lime}` |
+| **backgrounds** | `{on_black}` `{on_red}` `{on_green}` `{on_yellow}` `{on_blue}` `{on_magenta}` `{on_cyan}` `{on_white}`          |
+| **style**       | `{dim}` `{bold}` `{reset}`                                                                                      |
 
 **Theme gallery**
 
-| Theme | Looks like | Notes |
-|---|---|---|
-| `default` | `armaans@0x ~/Code/ang.sh ⎇ main ❯` … `21:18` | balanced, 256-color accents |
-| `minimal` | `~/Code ❯` … `✗ 1` | status only when it matters |
-| `rice` | `✦ armaans@0x  ~/Code/ang.sh  ⎇ main  ❯` … `21:18 ✓` | maximum shimmer, no fonts needed |
-| `power` | `▊ armaans@0x ▸ ang.sh ❯` | powerline segments — needs a Nerd Font |
-| `mono` | `armaans@0x ~/Code/ang.sh $` | zero color: logs, dumb terminals, purists |
+| Theme     | Looks like                                           | Notes                                     |
+| --------- | ---------------------------------------------------- | ----------------------------------------- |
+| `default` | `armaans@0x ~/Code/ang.sh ⎇ main ❯` … `21:18`        | balanced, 256-color accents               |
+| `minimal` | `~/Code ❯` … `✗ 1`                                   | status only when it matters               |
+| `rice`    | `✦ armaans@0x  ~/Code/ang.sh  ⎇ main  ❯` … `21:18 ✓` | maximum shimmer, no fonts needed          |
+| `power`   | `▊ armaans@0x ▸ ang.sh ❯`                            | powerline segments — needs a Nerd Font    |
+| `mono`    | `armaans@0x ~/Code/ang.sh $`                         | zero color: logs, dumb terminals, purists |
 
 ```sh
 theme rice     # switch live, or set it in ~/.config/angsh/config.ang
@@ -54,14 +54,22 @@ theme rice     # switch live, or set it in ~/.config/angsh/config.ang
 
 ## 🍬 What it borrowed
 
-| Feature | From | In v0.1.0 |
-|---|---|---|
-| pipes, `>`, `>>`, `<`, `2>`, `&>`, `&&`, `\|\|`, `;`, `&` | bash/POSIX | ✅ |
-| `$VAR`, `${VAR}`, `$?`, `$$`, `$!`, `~`, glob `* ? []` | bash | ✅ |
-| history file, `!!` / `!$`, `alias`, `type` | bash | ✅ |
-| left/right prompt themes, `autocd`, plugin dir | zsh | ✅ |
-| ghost autosuggestions, inline highlighting, `abbr`, `set` syntax | fish | ✅ |
-| `if`/`for`/`while`, functions, `$(...)` | — | ⏳ v0.2 |
+| Feature                                                          | From       | In v0.1.0 |
+| ---------------------------------------------------------------- | ---------- | --------- |
+| pipes, `>`, `>>`, `<`, `2>`, `&>`, `&&`, `\|\|`, `;`, `&`        | bash/POSIX | ✅        |
+| `$VAR`, `${VAR}`, `$?`, `$$`, `$!`, `~`, glob `* ? []`           | bash       | ✅        |
+| history file, `!!` / `!$`, `alias`, `type`                       | bash       | ✅        |
+| left/right prompt themes, `autocd`, plugin dir                   | zsh        | ✅        |
+| ghost autosuggestions, inline highlighting, `abbr`, `set` syntax | fish       | ✅        |
+| pipes, `>`, `>>`, `<`, `2>`, `&>`, `&&`, `\|\|`, `;`, `&`        | bash/POSIX | ✅ v0.1.0 |
+| `$VAR`, `${VAR}`, `$?`, `$$`, `$!`, `~`, glob `* ? []`           | bash       | ✅ v0.1.0 |
+| history file, `!!` / `!$`, `alias`, `type`                       | bash       | ✅ v0.1.0 |
+| left/right prompt themes, `autocd`, plugin dir                   | zsh        | ✅ v0.1.0 |
+| ghost autosuggestions, inline highlighting, `abbr`, `set` syntax | fish       | ✅ v0.1.0 |
+| `$(...)` command substitution                                      | bash/zsh   | ✅ v0.1.2 |
+| `read [-p PROMPT] NAME`                                          | bash/fish  | ✅ v0.1.2 |
+| `&` background jobs + `jobs`                                     | bash/zsh   | ✅ v0.1.2 |
+| `if`/`for`/`while`, functions                                    | —          | ⏳ v0.2   |
 
 The interactive niceties are all there out of the box:
 
@@ -76,13 +84,13 @@ The interactive niceties are all there out of the box:
 
 Default is **Ang**. Pass `--posix` (or `ANG_POSIX=1`) for POSIX mode.
 
-| Task | Ang (default) | POSIX (`posix on`) |
-|---|---|---|
-| set a variable | `set FOO bar baz` | `export FOO="bar baz"` |
-| temp env for one cmd | use `export` | `FOO=bar cmd` |
-| read a variable | `$FOO` (both) | `$FOO` |
-| toggle mode | `posix on` / `posix off` | same |
-| script shebang | `#!/usr/bin/env angsh` | `#!/usr/bin/env angsh --posix` |
+| Task                 | Ang (default)            | POSIX (`posix on`)             |
+| -------------------- | ------------------------ | ------------------------------ |
+| set a variable       | `set FOO bar baz`        | `export FOO="bar baz"`         |
+| temp env for one cmd | use `export`             | `FOO=bar cmd`                  |
+| read a variable      | `$FOO` (both)            | `$FOO`                         |
+| toggle mode          | `posix on` / `posix off` | same                           |
+| script shebang       | `#!/usr/bin/env angsh`   | `#!/usr/bin/env angsh --posix` |
 
 In Ang mode, a bare `FOO=bar` gets a friendly red hint instead of silently
 guessing what you meant:
@@ -103,20 +111,20 @@ curl -fsSL https://raw.githubusercontent.com/0x251C08/ang.sh/main/install.sh | s
 Pin a version or pick a directory:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/0x251C08/ang.sh/main/install.sh | sh -s -- --version v0.1.1 --dir ~/bin
+curl -fsSL https://raw.githubusercontent.com/0x251C08/ang.sh/main/install.sh | sh -s -- --version v0.1.2 --dir ~/bin
 ```
 
 **Manual download** — Linux x86_64, fully static (no runtime dependencies):
 
 ```sh
-curl -LO https://github.com/0x251C08/ang.sh/releases/download/v0.1.1/angsh-v0.1.1-x86_64-linux
-curl -LO https://github.com/0x251C08/ang.sh/releases/download/v0.1.1/angsh-v0.1.1-x86_64-linux.sha256
-sha256sum -c angsh-v0.1.1-x86_64-linux.sha256
-chmod +x angsh-v0.1.1-x86_64-linux
-sudo mv angsh-v0.1.1-x86_64-linux /usr/local/bin/angsh
+curl -LO https://github.com/0x251C08/ang.sh/releases/download/v0.1.2/angsh-v0.1.2-x86_64-linux
+curl -LO https://github.com/0x251C08/ang.sh/releases/download/v0.1.2/angsh-v0.1.2-x86_64-linux.sha256
+sha256sum -c angsh-v0.1.2-x86_64-linux.sha256
+chmod +x angsh-v0.1.2-x86_64-linux
+sudo mv angsh-v0.1.2-x86_64-linux /usr/local/bin/angsh
 ```
 
-**From source** — any POSIX system with a C++17 compiler and CMake 3.16+:
+**From source** — any POSIX system with a C++17+ compiler and CMake 3.16+:
 
 ```sh
 cmake -B build && cmake --build build   # optimized (Release) by default
@@ -124,8 +132,8 @@ cmake -B build && cmake --build build   # optimized (Release) by default
 sudo cmake --install build              # /usr/local/bin + themes
 ```
 
-Use `-DCMAKE_BUILD_TYPE=Debug` for a debug build.
-**Zero libraries** — stdlib and POSIX only, by design.
+Use `-DCMAKE_BUILD_TYPE=Debug` for a debug build. **Zero libraries** — stdlib
+and POSIX only, by design.
 
 ## 🚀 Usage
 
@@ -138,8 +146,8 @@ angsh script.ang         # run a script
 
 ## 🎨 Ricing
 
-Every file below is either plain angsh commands or `key="value"` lines — no
-new config language to learn:
+Every file below is either plain angsh commands or `key="value"` lines — no new
+config language to learn:
 
 ```sh
 ~/.config/angsh/config.ang      # plain commands (see examples/config.ang)
@@ -155,10 +163,10 @@ prompt_left="{orange}{user}{reset}{gray}@{reset}{teal}{host}{reset} {bold}{cwd}{
 prompt_right="{gray}{mode}{time}{fail}{reset}"
 ```
 
-Interactive keys: `Tab` complete · `→`/`Ctrl-F` accept suggestion ·
-`↑`/`↓` history · `Ctrl-A/E/U/K/W` edit · `Ctrl-C` cancel · `Ctrl-D` exit.
+Interactive keys: `Tab` complete · `→`/`Ctrl-F` accept suggestion · `↑`/`↓`
+history · `Ctrl-A/E/U/K/W` edit · `Ctrl-C` cancel · `Ctrl-D` exit.
 
-> Note: `alias`/`abbr` expand once per input *line* (same as bash). In
+> Note: `alias`/`abbr` expand once per input _line_ (same as bash). In
 > `angsh -c '...'` strings, put aliased commands on separate lines
 > (`-c $'alias ll=... \nll'`) or prefer scripts, where each line expands.
 
@@ -174,16 +182,18 @@ src/
   highlight.cpp colors+suggest     env/util     state + helpers
 ```
 
-Add a builtin in 3 steps (documented in `src/builtins.h`):
-declare → define → register in `is_parent_builtin`/`run_builtin`.
+Add a builtin in 3 steps (documented in `src/builtins.h`): declare → define →
+register in `is_parent_builtin`/`run_builtin`.
 
 Colors respect `NO_COLOR` and `TERM=dumb`, so piped output and CI logs stay
-clean; `visible_len()` skips ANSI escapes and UTF-8 continuation bytes so
-right prompts stay pixel-aligned.
+clean; `visible_len()` skips ANSI escapes and UTF-8 continuation bytes so right
+prompts stay pixel-aligned. More support for `dumb` terminal compatibility may
+come in the future and may also be a mode later on.
 
 ## 🗺️ Roadmap
 
-- **v0.2** — `if`/`for`/`while` blocks (both syntaxes), functions, `$(...)`, completion scripts
+- **v0.2** — `if`/`for`/`while` blocks (both syntaxes), functions, `$(...)`,
+  completion scripts
 - **v0.3** — vi mode, async prompt, `~/.config/angsh/completions/`
 - **v1.0** — POSIX test-suite parity for the `--posix` subset
 
